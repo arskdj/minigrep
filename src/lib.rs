@@ -1,5 +1,5 @@
-use std::fs;
 use std::error::Error;
+use std::fs;
 
 pub struct Config {
     query: String,
@@ -14,18 +14,43 @@ impl Config {
         let query = args[1].clone();
         let filename = args[2].clone();
 
-        Ok(Config {query, filename})
+        Ok(Config { query, filename })
     }
 }
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    println!("Searching for {}", config.query);
-    println!("In file {}", config.filename);
+    let contents = fs::read_to_string(config.filename).expect("IO error");
 
-    let contents = fs::read_to_string(config.filename)
-        .expect("IO error");
-
-    println!("File contents:\n {}", contents);
+    let result = search(&config.query, &contents);
+    println!("{:#?}", result);
 
     Ok(())
+}
+
+pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    let mut results: Vec<&str> = Vec::new();
+
+    for line in contents.lines() {
+        if line.contains(query) {
+            results.push(line);
+        }
+    }
+
+    results
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn one_result() {
+        let query = "duct";
+        let contents = "\
+Rust:
+safe, fast, productive.
+Pick three.";
+
+        assert_eq!(vec!["safe, fast, productive."], search(query, contents));
+    }
 }
